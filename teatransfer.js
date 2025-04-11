@@ -143,7 +143,7 @@ async function distributeTokens() {
 
         for (let i = 0; i < selectedRecipients.length; i++) {
             const recipient = selectedRecipients[i];
-            const amountToSend = ethers.utils.parseUnits("1000.0", 18);  // 1 Token untuk tiap transaksi
+            const amountToSend = ethers.parseUnits("1000.0", 18);  // 1000 Token untuk tiap transaksi
 
             // Tentukan delay sebelum transaksi
             const delayMs = Math.floor(Math.random() * (3 * 60 * 1000 - 2 * 60 * 1000) + 1 * 60 * 1000);
