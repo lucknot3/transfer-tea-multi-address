@@ -141,7 +141,69 @@ async function distributeTokens() {
         let failedRecipients = [];
         let selectedRecipients = recipients.slice(0, transactionLimit).sort(() => 0.5 - Math.random());
 
-        for (let i = 0; i < selectedRecipients.length; i++) {
+        let txCount = 1;
+
+for (let i = 0; i < selectedRecipients.length; i++) {
+    const recipient = selectedRecipients[i];
+    const amountHuman = "1000.0";
+    const amountToSend = ethers.parseUnits(amountHuman, 18);
+
+    const delayMs = Math.floor(Math.random() * (3 * 60 * 1000 - 2 * 60 * 1000) + 1 * 60 * 1000);
+    logInfo(`? Menunggu ${Math.floor(delayMs / 1000)} detik sebelum mengirim ke ${recipient}...`);
+
+    await delay(delayMs);
+
+    try {
+        for (let j = 0; j < 3; j++) {
+            const { wallet, tokenContract } = getWalletAndTokenContract(PRIVATE_KEYS[j], TOKEN_ADDRESSES[j]);
+
+            logInfo(`? [TX #${txCount}] Mempersiapkan pengiriman:
+  - Dari     : ${wallet.address}
+  - Ke       : ${recipient}
+  - Jumlah   : ${amountHuman} Token
+  - Token    : ${TOKEN_ADDRESSES[j]}
+  - Wallet # : ${j + 1}
+            `);
+
+            const tx = await tokenContract.transfer(recipient, amountToSend);
+            const receipt = await tx.wait(3);
+
+            const successMessage = `✅ *[TX #${txCount}]* Transaksi *BERHASIL*
+*Dari     :* \`${wallet.address}\`
+*Ke       :* \`${recipient}\`
+*Jumlah   :* ${amountHuman} Token
+*Token    :* \`${TOKEN_ADDRESSES[j]}\`
+*TX Hash  :* [Lihat TX](https://sepolia.tea.xyz/tx/${tx.hash})
+*Status   :* Confirmed ✅`;
+
+logInfo(successMessage);
+sendTelegramMessage(successMessage);
+
+
+            sentRecipients.push(recipient);
+            sentRecipients = [...new Set(sentRecipients)];
+            writeAddressesToFile('kyc_addresses_sent.txt', sentRecipients);
+
+            const postTxDelay = Math.floor(Math.random() * (70 * 1000 - 20 * 1000) + 30 * 1000);
+            await delay(postTxDelay);
+
+            txCount++;
+        }
+    } catch (error) {
+        const failMessage = `❌ *[TX #${txCount}]* Transaksi *GAGAL*
+*Ke       :* \`${recipient}\`
+*Jumlah   :* ${amountHuman} Token
+*Status   :* ❌ Gagal
+*Error    :* \`${error.message}\``;
+
+logError(failMessage);
+sendTelegramMessage(failMessage);
+
+        failedRecipients.push(recipient);
+        txCount++;
+    }
+}
+
             const recipient = selectedRecipients[i];
             const amountToSend = ethers.parseUnits("1000.0", 18);  // 1000 Token untuk tiap transaksi
 
