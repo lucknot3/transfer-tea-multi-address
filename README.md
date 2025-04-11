@@ -1,6 +1,6 @@
 # 🪙 Token Distribution Bot (Auto Transfer Bot)
 
-Bot ini digunakan untuk mendistribusikan token ERC-20 secara otomatis ke alamat-alamat wallet yang telah lolos KYC. Dibuat untuk digunakan di jaringan testnet seperti **Monad Testnet** atau **Sepolia**, dan mendukung **multi-wallet (3 private key)** serta **multi-token (3 token address)**.
+Bot ini digunakan untuk mendistribusikan token ERC-20 secara otomatis ke alamat-alamat wallet yang telah lolos KYC. Dibuat untuk digunakan di jaringan testnet seperti Monad Testnet atau Sepolia, dan mendukung multi-wallet (3 private key) serta multi-token (3 token address).
 
 ---
 
@@ -9,7 +9,7 @@ Bot ini digunakan untuk mendistribusikan token ERC-20 secara otomatis ke alamat-
 - ✅ Kirim token otomatis ke alamat dari daftar GitHub
 - ✅ Mendukung 3 wallet & 3 token address
 - ✅ Penjadwalan otomatis setiap hari
-- ✅ Logging ke file harian (`log-YYYY-MM-DD.txt`)
+- ✅ Logging ke file harian (log-YYYY-MM-DD.txt)
 - ✅ Notifikasi Telegram (opsional)
 - ✅ Retry otomatis jika transaksi gagal
 - ✅ Delay acak agar tidak terlihat seperti bot
@@ -46,7 +46,7 @@ Telegram Chat ID silahkan ambil disini : https://t.me/Check_Telegram_IDBot
 Copy dua duanya dan paste dibagian Bot Token dan Telegram Chat ID
 Save file .env nya
 Jalankan scriptnya pake command ini :
-  node teatransfer.js
+node teatransfer.js
 Masukkan jumlah penerima dan Jumlah token yang akan dikirim
 Selesai, selamat berbulking bulking ria~
 Notes :
@@ -55,8 +55,8 @@ Kalo kalian pengen botnya jalan di background, pencet CTRL A + D .
 Kalo kalian mau balikin lagi botnya , pakai command ini
 screen -r bulktransfer
 Kalo kalian mau matiin, tinggal klik CTRL + C
-Join our telegram community here : https://t.me/ETRxCrypto
-
+Join our telegram community here : https://t.me/Motogp_Official
+*note = kalau ada bagian error copy aja error nya terus paste di chatGPT nanti pasti dikasih tau errornya dimana dan solusi kode yang harus dilakukakan, karena tidak semua sama ada yang harus downgrade versi juga, thanks
 Thanks for the Source :
 
 KYC Adresses : https://tea.daov.xyz/kyc-address
