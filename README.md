@@ -1,64 +1,84 @@
-# 🪙 Token Distribution Bot (Auto Transfer Bot)
+# 🧋 Tea Sepolia Bulk Token Transfer Bot
 
-Bot ini digunakan untuk mendistribusikan token ERC-20 secara otomatis ke alamat-alamat wallet yang telah lolos KYC. Dibuat untuk digunakan di jaringan testnet seperti Monad Testnet atau Sepolia, dan mendukung multi-wallet (3 private key) serta multi-token (3 token address).
+Bot ini digunakan untuk mengirim token TEA ke banyak alamat sekaligus secara otomatis, dengan delay acak, rotasi wallet/token, logging harian, dan notifikasi Telegram (opsional). Support testnet Tea Sepolia.
 
 ---
 
-## 🚀 Fitur Utama
-
-- ✅ Kirim token otomatis ke alamat dari daftar GitHub
-- ✅ Mendukung 3 wallet & 3 token address
-- ✅ Penjadwalan otomatis setiap hari
-- ✅ Logging ke file harian (log-YYYY-MM-DD.txt)
+## 🚀 Fitur
+- ✅ Kirim token otomatis ke alamat-alamat KYC
+- ✅ Delay acak antar transaksi
+- ✅ Rotasi wallet dan kontrak token
+- ✅ Logging lengkap (harian)
 - ✅ Notifikasi Telegram (opsional)
-- ✅ Retry otomatis jika transaksi gagal
-- ✅ Delay acak agar tidak terlihat seperti bot
-
+- ✅ Jalan otomatis harian (loop 24 jam)
+  
 ---
 
-## 🔧 Cara Instalasi & Menjalankan
+## 🛠 Cara Pakai
 
 ### 1. Clone Repository
-
-```bash
-Clone repositorynya
 git clone https://github.com/lucknot3/transfer-tea-multi-address.git
 cd transfer-tea-multi-address
-Create screen ( Biar bisa running di background )
+2. Jalankan di Latar Belakang (Opsional)
 screen -Rd bulktransfer
-Install NPM , dotenv sama axios dulu di Linux
-sudo apt install npm
-npm install dotenv
+3. Install Dependensi
+sudo apt install
+npm install dotenv 
 npm install axios
-Install Dependencies
 npm install ethers
-Step by Step menggunakan botnya :
+⚙️ Konfigurasi .env
+Buka file .env dan isi dengan konfigurasi berikut:
+PRIVATE_KEY_1=0x...
+PRIVATE_KEY_2=0x...
+PRIVATE_KEY_3=0x...
 
-Pastikan kalian sudah menyelesaikan semua hal diatas
-Buka file .env di editor text vps kalian
-Cari bagian PRIVATE_KEY_KALIAN dan isi dengan private key kalian
-Cari bagian CONTRACT_ADDRESS dan paste contract address token kalian
-Cari bagian RPC_URL dan CHAIN_ID , pastikan sesuai dengan RPC dan Chain ID terbaru Tea Sepolia
-( Opsional ) kalo kalian pengen dapetin notifikasi dari bot telegram, silahkan ikuti step berikut ( kalau tidak minat silahkan di skip dan langsung save saja file .envnya )
+# Token
+TOKEN_ADDRESS_1=0x...
+TOKEN_ADDRESS_2=0x...
+TOKEN_ADDRESS_3=0x...
 
-Bot Tokennya silahkan kalian buat botnya dan ambil bot tokennya disini : https://t.me/BotFather
-Telegram Chat ID silahkan ambil disini : https://t.me/Check_Telegram_IDBot
-Copy dua duanya dan paste dibagian Bot Token dan Telegram Chat ID
-Save file .env nya
-Jalankan scriptnya pake command ini :
+# RPC dan Chain
+RPC_URL=https://rpc.testnet.tea.xyz
+CHAIN_ID=10218
+
+# Telegram (Opsional)
+TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_CHAT_ID=your_chat_id
+📌 Gunakan @BotFather untuk buat bot dan @Check_Telegram_IDBot untuk dapatkan Chat ID.
+
+▶️ Menjalankan Bot
 node teatransfer.js
-Masukkan jumlah penerima dan Jumlah token yang akan dikirim
-Selesai, selamat berbulking bulking ria~
-Notes :
+Ikuti prompt:
 
-Kalo kalian pengen botnya jalan di background, pencet CTRL A + D .
-Kalo kalian mau balikin lagi botnya , pakai command ini
-screen -r bulktransfer
-Kalo kalian mau matiin, tinggal klik CTRL + C
-Join our telegram community here : https://t.me/Motogp_Official
-*note = kalau ada bagian error copy aja error nya terus paste di chatGPT nanti pasti dikasih tau errornya dimana dan solusi kode yang harus dilakukakan, karena tidak semua sama ada yang harus downgrade versi juga, thanks
-Thanks for the Source :
+Masukkan jumlah alamat penerima
 
-KYC Adresses : https://tea.daov.xyz/kyc-address
-Original Script : https://github.com/ashev33/bulk-transfer-tea
-GPT
+Masukkan jumlah token yang akan dikirim (misal: 1000)
+
+🧠 Tips & Catatan
+CTRL + A lalu D → keluar dari screen (jalan di background)
+
+screen -r bulktransfer → kembali ke screen
+
+CTRL + C → hentikan bot
+
+📂 Struktur Output
+logs/ → berisi log transaksi harian (log-YYYY-MM-DD.txt)
+
+kyc_addresses_sent.txt → daftar alamat yang sudah dikirim
+
+kyc_addresses_pending.txt → alamat yang gagal dan akan dicoba ulang
+
+🔗 Resource
+📄 KYC Address: https://tea.daov.xyz/kyc-address
+
+🧠 Original Script: github.com/ashev33/bulk-transfer-tea
+
+👥 Komunitas Telegram: @https://t.me/tokocripic
+
+🧠 Troubleshooting
+Kalau error, cukup salin pesan error dan tanya ke ChatGPT atau komunitas. Contoh:
+Error: invalid sender or insufficient gas
+🤝 Kontribusi
+Silakan fork dan pull request jika ingin menambahkan fitur, refactor, atau memperbaiki bug. Terima kasih 🙏
+
+⚠️ Semua aktivitas adalah tanggung jawab pengguna. Gunakan hanya untuk tujuan testnet.
