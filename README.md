@@ -100,7 +100,7 @@ Ikuti prompt:
 ## 🔗 Resource
 
 - 📄 KYC Address: https://tea.daov.xyz/kyc-address  
-- 🧠 Original Script: [github.com/ashev33/bulk-transfer-tea](https://github.com/ashev33/bulk-transfer-tea)  
+- 🧠 Original Script:1. [github.com/ashev33/bulk-transfer-tea](https://github.com/ashev33/bulk-transfer-tea) & [https://github.com/freezydkz/Bulk-transfer-tea/tree/main]
 - 👥 Komunitas Telegram: [@tokocripic](https://t.me/tokocripic)  
 
 ---
