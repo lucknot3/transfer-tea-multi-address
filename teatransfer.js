@@ -124,12 +124,12 @@ async function distributeTokens() {
             return;
         }
 
-        const txLimit = Math.min(recipients.length, Math.floor(300 + Math.random() * 30) + 1);
+        const txLimit = Math.min(recipients.length, Math.floor(300 + Math.random() * 15) + 1);
         logInfo(`🎯 Akan kirim ${txLimit} transaksi hari ini.`);
 
         const toSend = recipients.slice(0, txLimit).sort(() => 0.5 - Math.random());
         const failed = [];
-        const amount = ethers.parseUnits("1000.0", 18);
+        const amount = ethers.parseUnits("0.1", 18);
         let txCount = 1;
 
         for (const recipient of toSend) {
