@@ -96,6 +96,23 @@ function randomDelay(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+// === Penanganan Wait TX + Retry ===
+async function waitWithRetry(tx, retries = 5) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await tx.wait(2);
+        } catch (err) {
+            if (err.code === 'UNKNOWN_ERROR' && err.error?.code === 429) {
+                console.log(`🔁 Rate-limit Alchemy, retry dalam 5s...`);
+                await delay(5000);
+            } else {
+                throw err;
+            }
+        }
+    }
+    throw new Error("❌ Gagal konfirmasi TX setelah beberapa kali retry.");
+}
+
 // === Distribusi Token Native ===
 async function distributeTokens() {
     try {
@@ -136,7 +153,8 @@ async function distributeTokens() {
                         value: amount,
                         gasLimit: 21000
                     });
-                    await tx.wait(2);
+
+                    await waitWithRetry(tx);
 
                     const successMsg = `✅ *[TX #${txCount}]* Berhasil\n*Dari:* \`${wallet.address}\`\n*Ke:* \`${recipient}\`\n*Jumlah:* 0.1 TEA\n[🔗 TX Hash](https://sepolia.tea.xyz/tx/${tx.hash})`;
                     logInfo(successMsg);
