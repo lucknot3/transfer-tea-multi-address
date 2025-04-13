@@ -31,9 +31,9 @@ const TOKEN_ADDRESSES = [
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-const MAX_GWEI = 10n;
-const MIN_GWEI = 2n;
-const TX_TIMEOUT_MS = 3 * 60 * 1000; // 3 menit
+// === Parameter Gas Price (Gwei) ===
+const MIN_GWEI = 0.01;
+const MAX_GWEI = 25;
 
 // === Logging ===
 const logDir = path.join(__dirname, "logs");
@@ -58,7 +58,7 @@ function sendTelegramMessage(message) {
 
 function logInfo(message) {
     logMessage("INFO", message);
-    if (/Transaksi/.test(message)) sendTelegramMessage(message);
+    if (/Transaksi|Berhasil|GAGAL/.test(message)) sendTelegramMessage(message);
 }
 
 function logError(message) {
@@ -110,10 +110,11 @@ function randomDelay(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// === Get Current Gwei ===
-async function getCurrentGwei() {
-    const fee = await provider.getFeeData();
-    return fee.gasPrice / 1_000_000_000n; // Convert to Gwei
+// === Gas Price Checker ===
+async function isGasPriceAcceptable() {
+    const feeData = await provider.getFeeData();
+    const gasPriceGwei = parseFloat(ethers.formatUnits(feeData.gasPrice, "gwei"));
+    return gasPriceGwei >= MIN_GWEI && gasPriceGwei <= MAX_GWEI;
 }
 
 // === Distribusi Token ===
@@ -146,33 +147,37 @@ async function distributeTokens() {
             logInfo(`⌛ Delay ${Math.floor(delayMs / 1000)}s sebelum kirim ke ${recipient}`);
             await delay(delayMs);
 
-            try {
-                const currentGwei = await getCurrentGwei();
-                if (currentGwei > MAX_GWEI) {
-                    const msg = `⚠️ Gwei terlalu tinggi: ${currentGwei} Gwei. Melewati ${recipient}`;
-                    logInfo(msg);
-                    failed.push(recipient);
-                    continue;
-                }
-                if (currentGwei < MIN_GWEI) {
-                    const msg = `⚠️ Gwei terlalu rendah: ${currentGwei} Gwei. Melewati ${recipient}`;
-                    logInfo(msg);
-                    failed.push(recipient);
-                    continue;
-                }
+            // Cek gas price dulu
+            const gasOk = await isGasPriceAcceptable();
+            if (!gasOk) {
+                logError(`🚫 Gwei saat ini diluar batas (${MIN_GWEI}-${MAX_GWEI} Gwei). Skip ${recipient}`);
+                failed.push(recipient);
+                continue;
+            }
 
-                for (let i = 0; i < 3; i++) {
+            try {
+                let success = false;
+
+                for (let i = 0; i < 3 && !success; i++) {
                     const { wallet, tokenContract } = getWalletAndTokenContract(PRIVATE_KEYS[i], TOKEN_ADDRESSES[i]);
 
                     logInfo(`🚀 TX #${txCount} - Kirim ke ${recipient} dari ${wallet.address}`);
                     const tx = await tokenContract.transfer(recipient, amount);
 
-                    const startTime = Date.now();
-                    while (true) {
+                    // Retry jika pending > 90 detik
+                    let confirmed = false;
+                    const start = Date.now();
+                    while (!confirmed && Date.now() - start < 90000) {
                         const receipt = await provider.getTransactionReceipt(tx.hash);
-                        if (receipt && receipt.confirmations >= 3) break;
-                        if (Date.now() - startTime > TX_TIMEOUT_MS) throw new Error("TX pending terlalu lama");
-                        await delay(5000);
+                        if (receipt && receipt.status === 1) {
+                            confirmed = true;
+                            break;
+                        }
+                        await delay(3000);
+                    }
+
+                    if (!confirmed) {
+                        throw new Error("Transaksi pending terlalu lama");
                     }
 
                     const successMsg = `✅ *[TX #${txCount}]* Berhasil\n*Dari:* \`${wallet.address}\`\n*Ke:* \`${recipient}\`\n*Token:* \`${TOKEN_ADDRESSES[i]}\`\n[🔗 TX Hash](https://sepolia.tea.xyz/tx/${tx.hash})`;
@@ -181,9 +186,9 @@ async function distributeTokens() {
 
                     sent.push(recipient);
                     writeAddressesToFile("kyc_addresses_sent.txt", sent);
-
                     await delay(randomDelay(30000, 70000));
                     txCount++;
+                    success = true;
                 }
             } catch (err) {
                 const failMsg = `❌ *[TX #${txCount}]* GAGAL\n*Ke:* \`${recipient}\`\n*Error:* \`${err.message}\``;
