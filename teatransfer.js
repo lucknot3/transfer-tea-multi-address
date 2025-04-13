@@ -63,7 +63,6 @@ function logError(message) {
     sendTelegramMessage(`❌ *Error:* ${message}`);
 }
 
-// === File Address Utilities ===
 function readAddressesFromFile(file) {
     if (!fs.existsSync(file)) return [];
     return fs.readFileSync(file, "utf8")
@@ -76,7 +75,6 @@ function writeAddressesToFile(file, addresses) {
     fs.writeFileSync(file, [...new Set(addresses)].join("\n"), "utf8");
 }
 
-// === Fetch KYC ===
 async function fetchKYCAddresses() {
     try {
         logInfo("⬇️ Mengunduh daftar alamat KYC...");
@@ -88,7 +86,6 @@ async function fetchKYCAddresses() {
     }
 }
 
-// === Wallet + Contract ===
 function getWalletAndTokenContract(privateKey, tokenAddress) {
     const wallet = new ethers.Wallet(privateKey, provider);
     const tokenContract = new ethers.Contract(tokenAddress, [
@@ -98,7 +95,6 @@ function getWalletAndTokenContract(privateKey, tokenAddress) {
     return { wallet, tokenContract };
 }
 
-// === Delay Tools ===
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -107,7 +103,22 @@ function randomDelay(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// === Distribusi Token ===
+async function waitWithRetry(tx, retries = 5) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await tx.wait(2);
+        } catch (err) {
+            if (err.code === 'UNKNOWN_ERROR' && err.error?.code === 429) {
+                console.log(`🔁 Rate-limit Alchemy, retry dalam 5s...`);
+                await delay(5000);
+            } else {
+                throw err;
+            }
+        }
+    }
+    throw new Error("❌ Gagal konfirmasi TX setelah beberapa kali retry.");
+}
+
 async function distributeTokens() {
     try {
         const allAddresses = await fetchKYCAddresses();
@@ -124,7 +135,7 @@ async function distributeTokens() {
             return;
         }
 
-        const txLimit = Math.min(recipients.length, Math.floor(300 + Math.random() * 30) + 1);
+        const txLimit = Math.min(recipients.length, Math.floor(250 + Math.random() * 10) + 1);
         logInfo(`🎯 Akan kirim ${txLimit} transaksi hari ini.`);
 
         const toSend = recipients.slice(0, txLimit).sort(() => 0.5 - Math.random());
@@ -143,7 +154,7 @@ async function distributeTokens() {
 
                     logInfo(`🚀 TX #${txCount} - Kirim ke ${recipient} dari ${wallet.address}`);
                     const tx = await tokenContract.transfer(recipient, amount);
-                    await tx.wait(3);
+                    await waitWithRetry(tx);
 
                     const successMsg = `✅ *[TX #${txCount}]* Berhasil\n*Dari:* \`${wallet.address}\`\n*Ke:* \`${recipient}\`\n*Token:* \`${TOKEN_ADDRESSES[i]}\`\n[🔗 TX Hash](https://sepolia.tea.xyz/tx/${tx.hash})`;
                     logInfo(successMsg);
@@ -170,7 +181,6 @@ async function distributeTokens() {
     }
 }
 
-// === Loop Harian ===
 async function startDailyLoop() {
     while (true) {
         await distributeTokens();
@@ -185,5 +195,4 @@ async function startDailyLoop() {
     }
 }
 
-// === Mulai ===
 startDailyLoop();
