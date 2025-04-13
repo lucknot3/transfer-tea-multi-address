@@ -6,7 +6,7 @@ const { ethers } = require("ethers");
 
 // === Konfigurasi ===
 const RPC_URL = process.env.RPC_URL;
-if (!RPC_URL || !process.env.PRIVATE_KEY_1 || !process.env.TOKEN_ADDRESS_1) {
+if (!RPC_URL || !process.env.PRIVATE_KEY_1) {
     console.error("❌ ERROR: Pastikan file .env dikonfigurasi dengan benar.");
     process.exit(1);
 }
@@ -20,12 +20,6 @@ const PRIVATE_KEYS = [
     process.env.PRIVATE_KEY_1,
     process.env.PRIVATE_KEY_2,
     process.env.PRIVATE_KEY_3,
-];
-
-const TOKEN_ADDRESSES = [
-    process.env.TOKEN_ADDRESS_1,
-    process.env.TOKEN_ADDRESS_2,
-    process.env.TOKEN_ADDRESS_3,
 ];
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -88,14 +82,9 @@ async function fetchKYCAddresses() {
     }
 }
 
-// === Wallet + Contract ===
-function getWalletAndTokenContract(privateKey, tokenAddress) {
-    const wallet = new ethers.Wallet(privateKey, provider);
-    const tokenContract = new ethers.Contract(tokenAddress, [
-        "function transfer(address to, uint256 amount) public returns (bool)",
-        "function decimals() view returns (uint8)",
-    ], wallet);
-    return { wallet, tokenContract };
+// === Wallet Only ===
+function getWallet(privateKey) {
+    return new ethers.Wallet(privateKey, provider);
 }
 
 // === Delay Tools ===
@@ -107,7 +96,14 @@ function randomDelay(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// === Distribusi Token ===
+function randomTEAAmount() {
+    const min = 0.07;
+    const max = 0.12;
+    const random = Math.random() * (max - min) + min;
+    return ethers.parseEther(random.toFixed(5));
+}
+
+// === Distribusi Token Native ===
 async function distributeTokens() {
     try {
         const allAddresses = await fetchKYCAddresses();
@@ -120,39 +116,43 @@ async function distributeTokens() {
         writeAddressesToFile("kyc_addresses_pending.txt", []);
 
         if (recipients.length === 0) {
-            logInfo("✅ Semua alamat KYC sudah menerima token.");
+            logInfo("✅ Semua alamat KYC sudah menerima TEA native.");
             return;
         }
 
-        const txLimit = Math.min(recipients.length, Math.floor(300 + Math.random() * 15) + 1);
+        const txLimit = Math.min(recipients.length, Math.floor(303 + Math.random() * 13)); // ≈ 303 - 315 transaksi
         logInfo(`🎯 Akan kirim ${txLimit} transaksi hari ini.`);
 
         const toSend = recipients.slice(0, txLimit).sort(() => 0.5 - Math.random());
         const failed = [];
-        const amount = ethers.parseUnits("0.1", 18);
         let txCount = 1;
 
         for (const recipient of toSend) {
-            const delayMs = randomDelay(60000, 180000);
+            const delayMs = randomDelay(60000, 180000); // 60s - 180s delay antar wallet
             logInfo(`⌛ Delay ${Math.floor(delayMs / 1000)}s sebelum kirim ke ${recipient}`);
             await delay(delayMs);
 
             try {
                 for (let i = 0; i < 3; i++) {
-                    const { wallet, tokenContract } = getWalletAndTokenContract(PRIVATE_KEYS[i], TOKEN_ADDRESSES[i]);
+                    const wallet = getWallet(PRIVATE_KEYS[i]);
+                    const amount = randomTEAAmount();
 
-                    logInfo(`🚀 TX #${txCount} - Kirim ke ${recipient} dari ${wallet.address}`);
-                    const tx = await tokenContract.transfer(recipient, amount);
-                    await tx.wait(3);
+                    logInfo(`🚀 TX #${txCount} - Kirim TEA ke ${recipient} dari ${wallet.address}`);
+                    const tx = await wallet.sendTransaction({
+                        to: recipient,
+                        value: amount,
+                        gasLimit: 21000
+                    });
+                    await tx.wait(2);
 
-                    const successMsg = `✅ *[TX #${txCount}]* Berhasil\n*Dari:* \`${wallet.address}\`\n*Ke:* \`${recipient}\`\n*Token:* \`${TOKEN_ADDRESSES[i]}\`\n[🔗 TX Hash](https://sepolia.tea.xyz/tx/${tx.hash})`;
+                    const successMsg = `✅ *[TX #${txCount}]* Berhasil\n*Dari:* \`${wallet.address}\`\n*Ke:* \`${recipient}\`\n*Jumlah:* ${ethers.formatEther(amount)} TEA\n[🔗 TX Hash](https://sepolia.tea.xyz/tx/${tx.hash})`;
                     logInfo(successMsg);
                     sendTelegramMessage(successMsg);
 
                     sent.push(recipient);
                     writeAddressesToFile("kyc_addresses_sent.txt", sent);
 
-                    await delay(randomDelay(30000, 70000));
+                    await delay(randomDelay(30000, 70000)); // 30s - 70s delay antar TX dari wallet berbeda
                     txCount++;
                 }
             } catch (err) {
