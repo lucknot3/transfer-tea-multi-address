@@ -66,7 +66,6 @@ function logError(message) {
     sendTelegramMessage(`❌ *Error:* ${message}`);
 }
 
-// === File Address Utilities ===
 function readAddressesFromFile(file) {
     if (!fs.existsSync(file)) return [];
     return fs.readFileSync(file, "utf8")
@@ -79,7 +78,6 @@ function writeAddressesToFile(file, addresses) {
     fs.writeFileSync(file, [...new Set(addresses)].join("\n"), "utf8");
 }
 
-// === Fetch KYC ===
 async function fetchKYCAddresses() {
     try {
         logInfo("⬇️ Mengunduh daftar alamat KYC...");
@@ -91,7 +89,6 @@ async function fetchKYCAddresses() {
     }
 }
 
-// === Wallet + Contract ===
 function getWalletAndTokenContract(privateKey, tokenAddress) {
     const wallet = new ethers.Wallet(privateKey, provider);
     const tokenContract = new ethers.Contract(tokenAddress, [
@@ -101,7 +98,6 @@ function getWalletAndTokenContract(privateKey, tokenAddress) {
     return { wallet, tokenContract };
 }
 
-// === Delay Tools ===
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -110,14 +106,12 @@ function randomDelay(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// === Gas Price Checker ===
 async function isGasPriceAcceptable() {
     const feeData = await provider.getFeeData();
     const gasPriceGwei = parseFloat(ethers.formatUnits(feeData.gasPrice, "gwei"));
     return gasPriceGwei >= MIN_GWEI && gasPriceGwei <= MAX_GWEI;
 }
 
-// === Distribusi Token ===
 async function distributeTokens() {
     try {
         const allAddresses = await fetchKYCAddresses();
@@ -141,13 +135,13 @@ async function distributeTokens() {
         const failed = [];
         const amount = ethers.parseUnits("1000.0", 18);
         let txCount = 1;
+        let currentWalletIndex = 0;
 
         for (const recipient of toSend) {
             const delayMs = randomDelay(60000, 180000);
             logInfo(`⌛ Delay ${Math.floor(delayMs / 1000)}s sebelum kirim ke ${recipient}`);
             await delay(delayMs);
 
-            // Cek gas price dulu
             const gasOk = await isGasPriceAcceptable();
             if (!gasOk) {
                 logError(`🚫 Gwei saat ini diluar batas (${MIN_GWEI}-${MAX_GWEI} Gwei). Skip ${recipient}`);
@@ -157,14 +151,15 @@ async function distributeTokens() {
 
             try {
                 let success = false;
+                let retryCount = 0;
 
-                for (let i = 0; i < 3 && !success; i++) {
-                    const { wallet, tokenContract } = getWalletAndTokenContract(PRIVATE_KEYS[i], TOKEN_ADDRESSES[i]);
+                while (!success && retryCount < 3) {
+                    const walletIndex = currentWalletIndex % PRIVATE_KEYS.length;
+                    const { wallet, tokenContract } = getWalletAndTokenContract(PRIVATE_KEYS[walletIndex], TOKEN_ADDRESSES[walletIndex]);
 
                     logInfo(`🚀 TX #${txCount} - Kirim ke ${recipient} dari ${wallet.address}`);
                     const tx = await tokenContract.transfer(recipient, amount);
 
-                    // Retry jika pending > 90 detik
                     let confirmed = false;
                     const start = Date.now();
                     while (!confirmed && Date.now() - start < 90000) {
@@ -177,10 +172,12 @@ async function distributeTokens() {
                     }
 
                     if (!confirmed) {
-                        throw new Error("Transaksi pending terlalu lama");
+                        retryCount++;
+                        logError(`⚠️ Transaksi pending terlalu lama, retry ke-${retryCount}...`);
+                        continue;
                     }
 
-                    const successMsg = `✅ *[TX #${txCount}]* Berhasil\n*Dari:* \`${wallet.address}\`\n*Ke:* \`${recipient}\`\n*Token:* \`${TOKEN_ADDRESSES[i]}\`\n[🔗 TX Hash](https://sepolia.tea.xyz/tx/${tx.hash})`;
+                    const successMsg = `✅ *[TX #${txCount}]* Berhasil\n*Dari:* \`${wallet.address}\`\n*Ke:* \`${recipient}\`\n*Token:* \`${TOKEN_ADDRESSES[walletIndex]}\`\n[🔗 TX Hash](https://sepolia.tea.xyz/tx/${tx.hash})`;
                     logInfo(successMsg);
                     sendTelegramMessage(successMsg);
 
@@ -188,8 +185,14 @@ async function distributeTokens() {
                     writeAddressesToFile("kyc_addresses_sent.txt", sent);
                     await delay(randomDelay(30000, 70000));
                     txCount++;
+                    currentWalletIndex++;
                     success = true;
                 }
+
+                if (!success) {
+                    throw new Error("Gagal setelah 3 percobaan");
+                }
+
             } catch (err) {
                 const failMsg = `❌ *[TX #${txCount}]* GAGAL\n*Ke:* \`${recipient}\`\n*Error:* \`${err.message}\``;
                 logError(failMsg);
@@ -205,7 +208,6 @@ async function distributeTokens() {
     }
 }
 
-// === Loop Harian ===
 async function startDailyLoop() {
     while (true) {
         await distributeTokens();
@@ -220,5 +222,4 @@ async function startDailyLoop() {
     }
 }
 
-// === Mulai ===
 startDailyLoop();
