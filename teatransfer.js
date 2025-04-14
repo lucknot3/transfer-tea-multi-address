@@ -103,6 +103,13 @@ function randomDelay(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function randomAmount() {
+    const min = 1000;
+    const max = 3000;
+    const value = Math.floor(Math.random() * (max - min + 1)) + min;
+    return ethers.parseUnits(value.toString(), 18);
+}
+
 async function waitWithRetry(tx, retries = 5) {
     for (let i = 0; i < retries; i++) {
         try {
@@ -140,7 +147,6 @@ async function distributeTokens() {
 
         const toSend = recipients.slice(0, txLimit).sort(() => 0.5 - Math.random());
         const failed = [];
-        const amount = ethers.parseUnits("1150.0", 18);
         let txCount = 1;
 
         for (const recipient of toSend) {
@@ -152,11 +158,13 @@ async function distributeTokens() {
                 for (let i = 0; i < 3; i++) {
                     const { wallet, tokenContract } = getWalletAndTokenContract(PRIVATE_KEYS[i], TOKEN_ADDRESSES[i]);
 
-                    logInfo(`🚀 TX #${txCount} - Kirim ke ${recipient} dari ${wallet.address}`);
+                    const amount = randomAmount();
+                    logInfo(`🚀 TX #${txCount} - Kirim ${ethers.formatUnits(amount, 18)} token ke ${recipient} dari ${wallet.address}`);
+
                     const tx = await tokenContract.transfer(recipient, amount);
                     await waitWithRetry(tx);
 
-                    const successMsg = `✅ *[TX #${txCount}]* Berhasil\n*Dari:* \`${wallet.address}\`\n*Ke:* \`${recipient}\`\n*Token:* \`${TOKEN_ADDRESSES[i]}\`\n[🔗 TX Hash](https://sepolia.tea.xyz/tx/${tx.hash})`;
+                    const successMsg = `✅ *[TX #${txCount}]* Berhasil\n*Dari:* \`${wallet.address}\`\n*Ke:* \`${recipient}\`\n*Token:* \`${TOKEN_ADDRESSES[i]}\`\n*Jumlah:* \`${ethers.formatUnits(amount, 18)}\`\n[🔗 TX Hash](https://sepolia.tea.xyz/tx/${tx.hash})`;
                     logInfo(successMsg);
                     sendTelegramMessage(successMsg);
 
