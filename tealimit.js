@@ -33,7 +33,7 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 // === Parameter Gas Price (Gwei) ===
 const MIN_GWEI = 0.01;
-const MAX_GWEI = 25;
+const MAX_GWEI = 130;
 
 // === Logging ===
 const logDir = path.join(__dirname, "logs");
