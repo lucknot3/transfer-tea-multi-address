@@ -145,17 +145,22 @@ async function distributeTokens() {
         const txLimit = Math.min(recipients.length, Math.floor(300 + Math.random() * 20) + 1);
         logInfo(`🎯 Akan kirim ${txLimit} transaksi hari ini.`);
 
-        const toSend = recipients.slice(0, txLimit).sort(() => 0.5 - Math.random());
+        const toSend = recipients.sort(() => 0.5 - Math.random());
         const failed = [];
         let txCount = 1;
 
+        outerLoop:
         for (const recipient of toSend) {
+            if (txCount > txLimit) break;
+
             const delayMs = randomDelay(60000, 180000);
             logInfo(`⌛ Delay ${Math.floor(delayMs / 1000)}s sebelum kirim ke ${recipient}`);
             await delay(delayMs);
 
             try {
                 for (let i = 0; i < 3; i++) {
+                    if (txCount > txLimit) break outerLoop;
+
                     const { wallet, tokenContract } = getWalletAndTokenContract(PRIVATE_KEYS[i], TOKEN_ADDRESSES[i]);
 
                     const amount = randomAmount();
@@ -183,24 +188,16 @@ async function distributeTokens() {
         }
 
         writeAddressesToFile("kyc_addresses_pending.txt", failed);
-        logInfo(`📦 Distribusi selesai. Sukses: ${txLimit - failed.length}, Gagal: ${failed.length}`);
+        logInfo(`📦 Distribusi selesai. Sukses: ${txCount - 1 - failed.length}, Gagal: ${failed.length}`);
     } catch (err) {
         logError("❌ Error distribusi utama: " + err.message);
     }
 }
 
 async function startDailyLoop() {
-    while (true) {
-        await distributeTokens();
-        const now = new Date();
-        const next = new Date();
-        next.setUTCHours(0, 0, 0, 0);
-        next.setUTCDate(now.getUTCDate() + 1);
-        const waitTime = next - now;
-
-        logInfo(`✅ Selesai untuk hari ini. Menunggu hingga ${next.toISOString()}...\n`);
-        await delay(waitTime + Math.floor(180000 * Math.random()));
-    }
+    await distributeTokens();
+    logInfo(`🏁 Program selesai setelah mencapai target harian.`);
+    process.exit(0);
 }
 
 startDailyLoop();
