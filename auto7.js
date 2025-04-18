@@ -153,7 +153,7 @@ async function distributeTokens() {
         for (const recipient of toSend) {
             if (txCount > txLimit) break;
 
-            const delayMs = randomDelay(50000, 120000);
+            const delayMs = randomDelay(50000, 100000);
             logInfo(`⌛ Delay ${Math.floor(delayMs / 1000)}s sebelum kirim ke ${recipient}`);
             await delay(delayMs);
 
@@ -176,7 +176,7 @@ async function distributeTokens() {
                     sent.push(recipient);
                     writeAddressesToFile("kyc_addresses_sent.txt", sent);
 
-                    await delay(randomDelay(10000, 30000));
+                    await delay(randomDelay(5000, 10000));
                     txCount++;
                 }
             } catch (err) {
