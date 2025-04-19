@@ -176,7 +176,7 @@ async function distributeTokens() {
                     sent.push(recipient);
                     writeAddressesToFile("kyc_addresses_sent.txt", sent);
 
-                    await delay(randomDelay(10000, 30000));
+                    await delay(randomDelay(5000, 10000));
                     txCount++;
                 }
             } catch (err) {
