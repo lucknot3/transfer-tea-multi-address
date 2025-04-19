@@ -4,7 +4,6 @@ const axios = require("axios");
 const path = require("path");
 const { ethers } = require("ethers");
 
-// === Konfigurasi ===
 const RPC_URL = process.env.RPC_URL;
 if (!RPC_URL || !process.env.PRIVATE_KEY_1 || !process.env.TOKEN_ADDRESS_1) {
     console.error("❌ ERROR: Pastikan file .env dikonfigurasi dengan benar.");
@@ -31,7 +30,6 @@ const TOKEN_ADDRESSES = [
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-// === Logging ===
 const logDir = path.join(__dirname, "logs");
 if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
 
@@ -153,7 +151,7 @@ async function distributeTokens() {
         for (const recipient of toSend) {
             if (txCount > txLimit) break;
 
-            const delayMs = randomDelay(40000, 70000);
+            const delayMs = randomDelay(40000, 60000);
             logInfo(`⌛ Delay ${Math.floor(delayMs / 1000)}s sebelum kirim ke ${recipient}`);
             await delay(delayMs);
 
@@ -176,7 +174,7 @@ async function distributeTokens() {
                     sent.push(recipient);
                     writeAddressesToFile("kyc_addresses_sent.txt", sent);
 
-                    await delay(randomDelay(5000, 10000));
+                    await delay(randomDelay(5000, 7000));
                     txCount++;
                 }
             } catch (err) {
@@ -201,31 +199,23 @@ async function startDailyLoop() {
         const now = new Date();
         const tomorrow = new Date(now);
         tomorrow.setDate(now.getDate() + 1);
-        tomorrow.setHours(0, 0, 0, 0);
+        tomorrow.setUTCHours(18, 0, 0, 0); // 01:00 WIB = 18:00 UTC
 
-        // Target jam 01:00 WIB keesokan hari
-        const targetWIB = new Date(tomorrow.getTime() + 7 * 60 * 60 * 1000);
-        targetWIB.setHours(1, 0, 0, 0);
-
-        const waitTime = targetWIB - now;
-        logInfo(`✅ Selesai hari ini. Menunggu hingga ${targetWIB.toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} (01:00 WIB)...`);
+        const waitTime = tomorrow - now;
+        logInfo(`✅ Selesai hari ini. Menunggu hingga ${tomorrow.toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} (01:00 WIB)...`);
         await delay(waitTime + randomDelay(10000, 30000));
     }
 }
 
 async function waitUntilOneAMWIB() {
     const now = new Date();
-    const oneAM = new Date(now);
-    oneAM.setHours(1, 0, 0, 0);
-
-    const oneAMUTC = new Date(oneAM.getTime() - 7 * 60 * 60 * 1000);
-    if (now >= oneAMUTC) {
-        oneAMUTC.setUTCDate(oneAMUTC.getUTCDate() + 1);
+    const target = new Date(now);
+    target.setUTCHours(18, 0, 0, 0); // 18:00 UTC = 01:00 WIB
+    if (now > target) {
+        target.setUTCDate(target.getUTCDate() + 1);
     }
-
-    const waitTime = oneAMUTC - now;
-    const targetTimeStr = oneAMUTC.toLocaleString("id-ID", { timeZone: "Asia/Jakarta" });
-
+    const waitTime = target.getTime() - now.getTime();
+    const targetTimeStr = target.toLocaleString("id-ID", { timeZone: "Asia/Jakarta" });
     logInfo(`🕐 Menunggu hingga jam 01:00 WIB (${targetTimeStr}) untuk mulai...`);
     await delay(waitTime + randomDelay(5000, 15000));
 }
