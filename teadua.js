@@ -140,7 +140,7 @@ async function distributeTokens() {
             return;
         }
 
-        const txLimit = Math.min(recipients.length, Math.floor(300 + Math.random() * 30) + 1);
+        const txLimit = Math.min(recipients.length, Math.floor(500 + Math.random() * 30) + 1);
         logInfo(`🎯 Akan kirim ${txLimit} transaksi hari ini.`);
 
         const toSend = recipients.sort(() => 0.5 - Math.random());
