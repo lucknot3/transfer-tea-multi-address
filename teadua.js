@@ -151,7 +151,7 @@ async function distributeTokens() {
         for (const recipient of toSend) {
             if (txCount > txLimit) break;
 
-            const delayMs = randomDelay(40000, 700000);
+            const delayMs = randomDelay(40000, 60000);
             logInfo(`⌛ Delay ${Math.floor(delayMs / 1000)}s sebelum kirim ke ${recipient}`);
             await delay(delayMs);
 
