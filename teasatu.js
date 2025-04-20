@@ -129,7 +129,7 @@ async function distributeTokens() {
             return;
         }
 
-        const txLimit = Math.min(recipients.length, Math.floor(300 + Math.random() * 30) + 1);
+        const txLimit = Math.min(recipients.length, Math.floor(190 + Math.random() * 10) + 1);
         logInfo(`🎯 Akan kirim ${txLimit} transaksi hari ini.`);
 
         const toSend = recipients.sort(() => 0.5 - Math.random());
@@ -139,7 +139,7 @@ async function distributeTokens() {
         for (const recipient of toSend) {
             if (txCount > txLimit) break;
 
-            const delayMs = randomDelay(60000, 180000);
+            const delayMs = randomDelay(40000, 70000);
             logInfo(`⌛ Delay ${Math.floor(delayMs / 1000)}s sebelum kirim ke ${recipient}`);
             await delay(delayMs);
 
